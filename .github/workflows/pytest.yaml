@@ -8,9 +8,14 @@ on:
         required: false
         default: '3.10'
         type: string
+      extra_args:
+        description: 'CLI Arguments to be passed to pytest command'
+        required: false
+        default: '--cov=src -vv'
+        type: string
 
 jobs:
-  pylint:
+  pytest:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -19,7 +24,7 @@ jobs:
       # only required for workflows in private repositories
       actions: read
       contents: read
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -35,11 +40,11 @@ jobs:
           pip install pytest
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
-      - name: Analysing the code with pylint
-        id: pylint
+      - name: Analysing the code with pytest
+        id: pytest
         continue-on-error: true
         run: |
-          pytest --cov=src --verbose
+          pytest ${{ inputs.extra_args }}
 
       # - name: Upload test results to GitHub
       #   uses: github/codeql-action/upload-sarif@v3
