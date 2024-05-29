@@ -27,7 +27,7 @@ jobs:
     # Use only 'java' to analyze code written in Java, Kotlin or both
     # Use only 'javascript' to analyze code written in JavaScript, TypeScript or both
     # Learn more about CodeQL language support at https://aka.ms/codeql-docs/language-support
-    
+
     # Runner size impacts CodeQL analysis time. To learn more, please see:
     #   - https://gh.io/recommended-hardware-resources-for-running-codeql
     #   - https://gh.io/supported-runners-and-hardware-resources
@@ -35,7 +35,7 @@ jobs:
     # Consider using larger runners for possible analysis time improvements.
     runs-on: ${{ (inputs.language == 'swift' && 'macos-latest') || 'ubuntu-latest' }}
     timeout-minutes: ${{ (inputs.language == 'swift' && 120) || 360 }}
-    
+
     permissions:
       actions: read
       contents: read
