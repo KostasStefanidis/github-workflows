@@ -1,12 +1,23 @@
-name: Publish package to a Maven Repository
+# This is a reusable Github Workflow to publish artifacts to a Maven Repository
+name: Publish Maven Artifacts
 
 on:
   workflow_call:
     inputs:
-      repository_id: 
+      repository_id:
         description: 'The repository to publish the artifacts to'
         required: false
         default: github
+        type: string
+      java_version:
+        description: 'The java version to be used for the build of the artifacts'
+        required: false
+        default: '17'
+        type: string
+      java_distribution:
+        description: 'The java distribution to be used for the build of the artifacts'
+        required: false
+        default: 'temurin'
         type: string
     secrets:
       username:
@@ -25,12 +36,12 @@ jobs:
       - name: Set up Maven Central Repository
         uses: actions/setup-java@v4
         with:
-          java-version: '17'
-          distribution: 'temurin'
+          java-version: ${{ inputs.java_version }}
+          distribution: ${{ inputs.java_distribution }}
           server-id: ${{ inputs.repository_id }}
-          server-username: MAVEN_USERNAME
-          server-password: MAVEN_PASSWORD
-      
+          server-username: ${{ secrets.username }}
+          server-password: ${{ secrets.password }}
+
       - name: Publish package
         run: mvn --batch-mode deploy
         env:
