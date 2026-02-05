@@ -1,0 +1,118 @@
+name: Install Helm Chart
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        type: string
+      helm_version:
+        description: 'Helm version to use'
+        required: false
+        default: 'v3.19.0'
+        type: string
+      kubectl_version:
+        description: 'kubectl version to use'
+        required: false
+        default: 'v1.30.0'
+        type: string
+      helm_registry:
+        description: 'URL of the Helm repository to pull the chart from'
+        required: false
+        default: 'ghcr.io'
+        type: string
+      helm_chart_repo:
+        description: 'Name of the Helm repository to pull the chart from (leave empty for default)'
+        required: false
+        default: '${{ github.repository_owner }}'
+        type: string
+      helm_values_file:
+        description: 'Path to the Helm values file to use for the installation'
+        required: false
+        default: ''
+        type: string
+      helm_extra_args:
+        description: 'Additional arguments to pass to the helm install/upgrade command'
+        required: false
+        default: ''
+        type: string
+      chart_version:
+        description: 'Chart version to install (leave empty for latest)'
+        required: false
+        type: string
+      chart_name:
+        description: 'Name of the Helm chart to install'
+        required: true
+        type: string
+      namespace:
+        description: 'Kubernetes namespace'
+        required: false
+        default: 'default'
+        type: string
+    secrets:
+      kubeconfig:
+        description: 'Base64 encoded kubeconfig file for cluster access'
+        required: true
+      helm_repo_username:
+        description: 'Username for Helm repository authentication'
+        required: true
+      helm_repo_password:
+        description: 'Password for Helm repository authentication'
+        required: true
+
+env:
+    HELM_REGISTRY_URL: oci://${{ inputs.helm_registry }}/${{ github.repository_owner }}
+
+jobs:
+  install:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+
+    steps:
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: ${{ inputs.helm_version }}
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: ${{ inputs.kubectl_version }}
+
+      - name: Configure Kubernetes Context
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.kubeconfig }}" > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
+
+      - name: Log in to GitHub Container Registry
+        run: |
+          helm registry login ${{ inputs.helm_registry }} --username ${{ secrets.helm_repo_username }} --password ${{ secrets.helm_repo_password }}
+
+      - name: Create Namespace if Not Exists
+        run: |
+          kubectl create namespace ${{ inputs.namespace }} --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Install/Upgrade Helm Chart
+        run: |
+          helm upgrade --install ${{ inputs.chart_name }} \
+          ${{ env.HELM_REGISTRY_URL }}/${{ inputs.chart_name }} \
+          --version ${{ inputs.chart_version }} \
+          --namespace ${{ inputs.namespace }} \
+          ${{ inputs.helm_values_file != '' && format('--values {0}', inputs.helm_values_file) || '' }} \
+          ${{ inputs.helm_extra_args }} \
+          --wait \
+          --timeout 20m
+
+      - name: Verify Deployment
+        run: |
+          helm status ${{ inputs.chart_name }} -n ${{ inputs.namespace }}
+          kubectl get all -n ${{ inputs.namespace }}
+          kubectl rollout status deployment -n ${{ inputs.namespace }} --timeout=5m
+
+      - name: Logout from Registry
+        run: |
+          helm registry logout ${{ inputs.helm_registry }}
