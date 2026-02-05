@@ -62,7 +62,7 @@ on:
         required: true
 
 env:
-    HELM_REGISTRY_URL: oci://${{ inputs.helm_registry }}/${{ github.repository_owner }}
+  HELM_REGISTRY_URL: oci://${{ inputs.helm_registry }}/${{ inputs.helm_chart_repo }}
 
 jobs:
   install:
@@ -88,7 +88,7 @@ jobs:
           echo "${{ secrets.kubeconfig }}" > $HOME/.kube/config
           chmod 600 $HOME/.kube/config
 
-      - name: Log in to GitHub Container Registry
+      - name: Log in to Helm Registry
         run: |
           helm registry login ${{ inputs.helm_registry }} --username ${{ secrets.helm_repo_username }} --password ${{ secrets.helm_repo_password }}
 
