@@ -3,6 +3,14 @@ name: Package and Publish Helm Chart
 on:
   workflow_call:
     inputs:
+      chart_name:
+        description: 'Name of the Helm chart to publish'
+        required: true
+        type: string
+      chart_version:
+        description: 'Chart version to publish'
+        required: true
+        type: string
       helm_version:
         description: 'Helm version to use'
         required: false
@@ -16,16 +24,9 @@ on:
       helm_chart_repo:
         description: 'Name of the Helm repository to pull the chart from (leave empty for default)'
         required: false
-        default: '${{ github.repository_owner }}'
+        default: ${{ github.repository_owner }}
         type: string
-      chart_name:
-        description: 'Name of the Helm chart to publish'
-        required: true
-        type: string
-      chart_version:
-        description: 'Chart version to publish'
-        required: true
-        type: string
+
     secrets:
       helm_repo_username:
         description: 'Username for Helm repository authentication'
